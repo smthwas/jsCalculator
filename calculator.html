@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style>
+        .opLine {height: 186px; border-bottom-style: solid; border-bottom-width: 1px; border-bottom-color: black;}
+        .button {display: inline-block; height:126px; width: 187px; border-right-style: solid; border-right-width: 1px; border-right-color: black; background-color: #A9A9A9; font-size: 60px; text-align: center; padding-top: 60px; }
+        .wideButton {width: 375px;}
+        .buttonOrange {width: 186px; border: none; background-color: #FF8C00;}
+    </style>
+    <script language="JavaScript1.2">
+        var hasPointer = false;
+        var stack = new Array();
+        var stackIndex = 0;
+        var hasOp = false;
+
+        function init() {
+            hasPointer = false;
+            stack = new Array();
+            stackIndex = 0;
+            updateValue("0");
+        }
+
+        function switchPosNeg() {
+            var num = getCurValue();
+            if (num.startsWith("-")) {
+                num = num.substring(1);
+            } else {
+                num = "-" + num;
+            }
+            updateValue(num);
+        }
+
+        function getCurValue() {
+            var display = document.getElementById("display");
+            var num = display.innerHTML;
+            if (num == null || num.length == 0) {
+                num = "0";
+                display.innerHTML = num;
+            }
+            return removeComma(num);
+        }
+
+        function removeComma(num) {
+            while (num.indexOf(",") != -1) {
+                var index = num.indexOf(",");
+                var pre = num.substring(0, index);
+                var post = num.substring(index + 1);
+                num = pre + post;
+            }
+            return num;
+        }
+
+        function updateValue(num) {
+            document.getElementById("display").innerHTML = formatNum(num);
+        }
+
+        function clickNum(num) {
+            if (hasOp) {
+                updateValue(num);
+                hasOp = false;
+            } else {
+                var currNum = getCurValue();
+                var numWithoutMinus = currNum;
+                var pre = "";
+                if (currNum.startsWith("-")) {
+                    pre = "-";
+                    numWithoutMinus = numWithoutMinus.substring(1);
+                }
+                while (numWithoutMinus.indexOf("0") == 0) {
+                    numWithoutMinus = numWithoutMinus.substring(1);
+                }
+                if (hasPointer && numWithoutMinus.indexOf(".") == -1) {
+                    numWithoutMinus += ".";
+                }
+                numWithoutMinus += num;
+                updateValue(pre + numWithoutMinus);
+            }
+        }
+
+        function clickPoint() {
+            if (hasOp) {
+                updateValue("0");
+                hasOp = false;
+            }
+            hasPointer = true;
+        }
+
+        function formatNum(num) {
+            var minus = "";
+            if (num.startsWith("-")) {
+                minus = "-";
+                num = num.substring(1);
+            }
+            if (num.indexOf(".") == num.length - 1) {
+                num = num.substring(0, num.length - 1);
+            }
+            var pre, post;
+            var index = num.indexOf(".");
+            if (index != -1) {
+                pre = num.substring(0, index);
+                post = num.substring(index);
+            } else {
+                pre = num;
+                post = "";
+            }
+            var newPre = "";
+            for (var i = pre.length - 1; i >= 0; i--) {
+                if ((pre.length - i - 1) % 3 == 0 && i != pre.length - 1) {
+                    newPre = "," + newPre;
+                }
+                var c = pre.charAt(i);
+                newPre = c + newPre;
+            }
+            if (hasPointer && newPre == "") {
+                newPre = "0";
+            }
+            return minus + newPre + post;
+        }
+
+        function clickOp(op) {
+            hasOp = true;
+            var num = getCurValue();
+            stack[stackIndex++] = num;
+            if (op == "+" || op == "-") {
+                var result = cal();
+                console.log(result);
+                stack = new Array();
+                stack[0] = result;
+                stack[1] = op;
+                stackIndex = 2;
+            } else {
+                stack[stackIndex++] = op;
+            }
+            positive = false;
+        }
+
+        function cal() {
+            console.log(stack);
+            console.log(stackIndex);
+            if (stackIndex == 1) {
+                return stack[0];
+            }
+            var newStack = new Array();
+            for (var i = 0; i < stackIndex;) {
+                var str = stack[i];
+                if (str == "*" || str == "/") {
+                    if (i == stackIndex - 1) {
+                        break;
+                    }
+                    var n1 = newStack[newStack.length - 1];
+                    var n2 = stack[i + 1];
+                    i = i + 2;
+                    var num1 = parseFloat(n1);
+                    var num2 = parseFloat(n2);
+                    var result;
+                    if (str == "*") {
+                        result = num1 * num2;
+                    } else {
+                        result = num1 / num2;
+                    }
+                    newStack[newStack.length - 1] = "" + result;
+                } else {
+                    newStack[newStack.length] = str;
+                    i++;
+                }
+            }
+            var result = newStack[0];
+            if (newStack.length == 1) {
+                return result;
+            }
+            for (var i = 1; i < newStack.length - 1; i += 2) {
+                var op = newStack[i];
+                var n2 = newStack[i + 1];
+                var num1 = parseFloat(result);
+                var num2 = parseFloat(n2);
+                var r;
+                if (op == "+") {
+                    r = num1 + num2;
+                } else {
+                    r = num1 - num2;
+                }
+                result = "" + r;
+            }
+            updateValue("" + result);
+            return "" + result;
+        }
+
+        function clickResult() {
+            if (stackIndex == 0) {
+                return;
+            }
+            if (!hasOp) {
+                var num = getCurValue();
+                stack[stackIndex++] = num;
+                hasOp = true;
+            }
+            var result = cal();
+            updateValue(result);
+            stack = new Array();
+            stackIndex = 0;
+        }
+    </script>
+</head>
+<body>
+<div id="main" style="border-style: solid; border-width: 1px; border-color: black; width: 750px; height: 1334px;">
+    <div id="displayWrapper" style="height:400px; width: 750px; background-color: black; color: white; text-align: right; vertical-align: text-bottom; font-size: 150px;">
+        <div id="display" style="display:inline-block; height: 200px; padding-top:200px; padding-right: 30px; vertical-align:bottom;">0</div>
+    </div>
+    <div id="operationWrapper">
+        <div id="line_1" class="opLine">
+            <div id="acButton" class="button" onclick="init()">AC</div><!--
+            --><div id="plusMinusButton" class="button" onclick="switchPosNeg()">+/-</div><!--
+            --><div id="percentButton" class="button">%</div><!--
+            --><div id="divideButton" class="button buttonOrange" onclick="clickOp('/')">/</div>
+        </div>
+        <div id="line_2" class="opLine">
+            <div id="sevenButton" class="button" onclick="clickNum('7')">7</div><!--
+            --><div id="eightButton" class="button" onclick="clickNum('8')">8</div><!--
+            --><div id="nineButton" class="button" onclick="clickNum('9')">9</div><!--
+            --><div id="multiButton" class="button buttonOrange" onclick="clickOp('*')">*</div>
+        </div>
+        <div id="line_3" class="opLine">
+            <div id="fourButton" class="button" onclick="clickNum('4')">4</div><!--
+            --><div id="fiveButton" class="button" onclick="clickNum('5')">5</div><!--
+            --><div id="sixButton" class="button" onclick="clickNum('6')">6</div><!--
+            --><div id="subtractButton" class="button buttonOrange" onclick="clickOp('-')">-</div>
+        </div>
+        <div id="line_4" class="opLine">
+            <div id="oneButton" class="button" onclick="clickNum('1')">1</div><!--
+            --><div id="twoButton" class="button" onclick="clickNum('2')">2</div><!--
+            --><div id="threeButton" class="button" onclick="clickNum('3')">3</div><!--
+            --><div id="addButton" class="button buttonOrange" onclick="clickOp('+')">+</div>
+        </div>
+        <div id="line_5" class="opLine">
+            <div id="zeroButton" class="button wideButton" onclick="clickNum('0')">0</div><!--
+            --><div id="pointButton" class="button" onclick="clickPoint()">.</div><!--
+            --><div id="equalButton" class="button buttonOrange" onclick="clickResult()">=</div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
